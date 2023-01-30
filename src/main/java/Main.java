@@ -8,6 +8,8 @@ import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
+import java.util.stream.DoubleStream;
+import java.util.stream.Stream;
 
 // nodes
 // [{id: 0, x: 0.0, y: 0.0}, ...]
@@ -19,13 +21,28 @@ import java.util.stream.Collectors;
 @SuppressWarnings("UnstableApiUsage")
 public class Main {
     public static void main(String[] args) {
+        long start = System.currentTimeMillis();
+
+        if (args.length < 2) {
+            throw new RuntimeException("Missing arguments");
+        }
+
+        File file;
+        try {
+            file = new File(args[0]);
+        } catch (NullPointerException e) {
+            throw new RuntimeException("Invalid file path: " + args[0], e);
+        }
+
+        int requestedNumberOfViewSpots;
+        try {
+            requestedNumberOfViewSpots = Integer.parseInt(args[1]);
+        } catch (NullPointerException e) {
+            throw new RuntimeException("Cannot parse as Integer: " + args[1], e);
+        }
+
         var objectMapper = new ObjectMapper();
-
         Mesh mesh;
-
-        var file = new File("/Users/Valerian/repositories/view-spots-java/input/mesh.json");
-
-        System.out.println("File: " + file);
 
         try {
             mesh = objectMapper.readValue(file, new TypeReference<>() {
@@ -34,46 +51,41 @@ public class Main {
             throw new RuntimeException(e);
         }
 
-        System.out.println(mesh);
-
-        HashSet<ElementWithValue> viewSpotCandidates = Streams
+        ElementWithValue[] viewSpotCandidates = Streams
                 .zip(
                         Arrays.stream(mesh.elements),
                         Arrays.stream(mesh.values),
                         (ElementWithValue::new)
                 )
-                .collect(Collectors.toCollection(HashSet::new));
+                .sorted(Comparator.comparingDouble(ElementWithValue::getValue).reversed())
+                .toArray(ElementWithValue[]::new);
 
-        System.out.println(viewSpotCandidates);
+        var viewSpots = new ArrayList<ElementWithValue>(Collections.emptyList());
+        var higherNodes = new HashSet<Integer>();
 
-        var viewSpots = new ArrayList<>(Collections.emptyList());
+        var i = 0;
+        while (viewSpots.size() < requestedNumberOfViewSpots) {
+            var element = viewSpotCandidates[i];
 
-        for (ElementWithValue viewSpotCandidate : viewSpotCandidates) {
-            viewSpotCandidates.remove(viewSpotCandidate);
-            var allLowerAndToBeRemovedPair = removeSameOrLowerValueNeighbors(viewSpotCandidate, viewSpotCandidates);
+            if (Sets.intersection(element.getNodes(), higherNodes).isEmpty()) {
+                higherNodes.addAll(element.getNodes());
+                viewSpots.add(element);
+            }
 
-            if (allLowerAndToBeRemovedPair.allLower) viewSpots.add(viewSpotCandidate);
-            viewSpotCandidates.removeAll(allLowerAndToBeRemovedPair.elementsToBeRemoved);
+            ++i;
+
+            if (i == viewSpotCandidates.length) {
+                System.err.println("More view spots requested than available.");
+                break;
+            }
         }
 
-        System.out.println(viewSpots);
-    }
+        long time = System.currentTimeMillis() - start;
+        System.out.println("took: " + time);
 
-    private static AllLowerAndToBeRemovedPair removeSameOrLowerValueNeighbors(
-            ElementWithValue currentElement,
-            HashSet<ElementWithValue> viewSpotCandidates
-    ) {
-        var toBeRemoved = new HashSet<ElementWithValue>();
-        AtomicBoolean allLower = new AtomicBoolean(true);
-
-        viewSpotCandidates.forEach( element -> {
-            if (!Sets.intersection(currentElement.getNodes(), element.getNodes()).isEmpty()
-                    && element.getValue() <= currentElement.getValue()) {
-                toBeRemoved.add(element);
-            } else {
-                allLower.set(false);
-            }
-        });
-        return new AllLowerAndToBeRemovedPair(allLower.get(), toBeRemoved);
+        System.out.println("view spots: ");
+        System.out.println(
+                Arrays.toString(viewSpots.stream().flatMap(e -> Stream.of("\n{element_id: " + e.getId() + ", value: " + e.getValue() + "}")).toArray())
+        );
     }
 }

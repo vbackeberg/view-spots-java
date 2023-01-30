@@ -1,9 +1,10 @@
+import java.util.HashSet;
 import java.util.Set;
 
 public class Element {
     private int id;
 
-    private Set<Integer> nodes;
+    private HashSet<Integer> nodes;
 
     public Element() {
     }
@@ -16,11 +17,11 @@ public class Element {
         this.id = id;
     }
 
-    public Set<Integer> getNodes() {
+    public HashSet<Integer> getNodes() {
         return nodes;
     }
 
-    public void setNodes(Set<Integer> nodes) {
+    public void setNodes(HashSet<Integer> nodes) {
         this.nodes = nodes;
     }
 }
