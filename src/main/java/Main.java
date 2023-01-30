@@ -21,7 +21,7 @@ import java.util.stream.Stream;
 @SuppressWarnings("UnstableApiUsage")
 public class Main {
     public static void main(String[] args) {
-        long start = System.currentTimeMillis();
+//        long start = System.currentTimeMillis();
 
         if (args.length < 2) {
             throw new RuntimeException("Missing arguments");
@@ -80,12 +80,13 @@ public class Main {
             }
         }
 
-        long time = System.currentTimeMillis() - start;
-        System.out.println("took: " + time);
+        // long time = System.currentTimeMillis() - start;
+        // System.out.println("took: " + time);
 
-        System.out.println("view spots: ");
+        // System.out.println("view spots: ");
         System.out.println(
-                Arrays.toString(viewSpots.stream().flatMap(e -> Stream.of("\n{element_id: " + e.getId() + ", value: " + e.getValue() + "}")).toArray())
+                Arrays.toString(viewSpots.stream().flatMap(e ->
+                        Stream.of("\n{element_id: " + e.getId() + ", value: " + e.getValue() + "}")).toArray())
         );
     }
 }
